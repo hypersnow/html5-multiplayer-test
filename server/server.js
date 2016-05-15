@@ -12,6 +12,10 @@ var sockets = {};
 
 app.use(express.static(__dirname + '/client'));
 
+app.get('/', function (req, res) {
+  res.render(__dirname + '/client/index.html', {});
+});
+
 http.listen(port, function() {
   console.log('listening on ' + port);
 });
