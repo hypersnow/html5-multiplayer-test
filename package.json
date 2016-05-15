@@ -1,0 +1,26 @@
+{
+  "name": "html5-multiplayer-test",
+  "version": "0.0.0",
+  "description": "online html5 multiplayer game using node.js and phaser",
+  "main": "server.js",
+  "author": "hypersnow",
+  "dependencies": {
+    "async": "^2.0.0-rc.3",
+    "express": "^4.13.4",
+    "phaser": "^2.4.6",
+    "socket.io": "^1.4.5"
+  },
+  "devDependencies": {
+    "browserify": "^13.0.0",
+    "gulp": "^3.9.1",
+    "gulp-connect": "^3.2.2",
+    "gulp-jshint": "^2.0.0",
+    "gulp-sourcemaps": "^2.0.0-alpha",
+    "gulp-uglify": "^1.5.3",
+    "jshint": "^2.9.2",
+    "lodash.assign": "^4.0.8",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.7.0"
+  }
+}
