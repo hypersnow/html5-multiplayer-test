@@ -145,7 +145,6 @@ Game.prototype = {
         otherPlayer.frame = msg[tempSocket][4];
         otherPlayer.nickname = msg[tempSocket][5];
         otherPlayer.tint = msg[tempSocket][6];
-        console.log(otherPlayer.nickname);
       }
     }
   },
