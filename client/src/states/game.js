@@ -104,11 +104,7 @@ Game.prototype = {
   },
 
   onPlayerConnect: function(msg) {
-    var newPlayer = this.otherPlayers.add(new Player(msg[2], msg[3], false));
-    newPlayer.name = msg[1];
-    newPlayer.frame = msg[4];
-    newPlayer.nickname = msg[5];
-    newPlayer.tint = msg[6];
+    this.addOtherPlayer(msg);
     console.log("new player connected with id " + msg[1]);
   },
 
@@ -120,6 +116,8 @@ Game.prototype = {
           otherPlayer.x = msg[tempSocket][1];
           otherPlayer.y = msg[tempSocket][2];
           otherPlayer.frame = msg[tempSocket][3];
+          otherPlayer.body.velocity.x = msg[tempSocket][4];
+          otherPlayer.body.velocity.y = msg[tempSocket][5];
         }
       }, this);
     }
@@ -139,28 +137,36 @@ Game.prototype = {
     this.otherPlayers.removeAll(true);
     for(var tempSocket in msg) {
       if (msg[tempSocket][1] != this.player.name)
-      {
-        var otherPlayer = this.otherPlayers.add(new Player(msg[tempSocket][2], msg[tempSocket][3], false));
-        otherPlayer.name = msg[tempSocket][1];
-        otherPlayer.frame = msg[tempSocket][4];
-        otherPlayer.nickname = msg[tempSocket][5];
-        otherPlayer.tint = msg[tempSocket][6];
-      }
+        this.addOtherPlayer(msg[tempSocket]);
     }
   },
   
   fixedSendLoop: function() {
-    socket.emit("player update", [true, this.player.x, this.player.y, this.player.frame]);
+    this.sendPlayerUpdate();
     socket.emit("player count", this.otherPlayers.length + 1);
   },
   
   sendLoop: function() {
     if (this.initSend)
     {
-      socket.emit("player init", [true, this.player.name, this.player.x, this.player.y, this.player.frame, this.player.nickname, this.player.tint]);
+      socket.emit("player init", [true, this.player.name, this.player.x, this.player.y, this.player.frame, this.player.nickname, this.player.tint, this.player.body.velocity.x, this.player.body.velocity.y]);
       this.initSend = false;
     }
     else if (this.player.body.velocity.x != 0 || this.player.body.velocity.y != 0)
-      socket.emit("player update", [true, this.player.x, this.player.y, this.player.frame]);
+      this.sendPlayerUpdate();
+  },
+  
+  sendPlayerUpdate: function() {
+    socket.emit("player update", [true, this.player.x, this.player.y, this.player.frame, this.player.body.velocity.x, this.player.body.velocity.y]);
+  },
+  
+  addOtherPlayer: function(msg) {
+    var otherPlayer = this.otherPlayers.add(new Player(msg[2], msg[3], false));
+    otherPlayer.name = msg[1];
+    otherPlayer.frame = msg[4];
+    otherPlayer.nickname = msg[5];
+    otherPlayer.tint = msg[6];
+    otherPlayer.body.velocity.x = msg[7];
+    otherPlayer.body.velocity.y = msg[8];
   }
 };

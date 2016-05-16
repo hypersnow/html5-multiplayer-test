@@ -46,25 +46,25 @@ Player.prototype.moveUpdate = function(platforms, cursors) {
         this.jumping = false;
     }
     this.jumpPrevious = this.y;
-    
-    if (this.body.velocity.y != 0 && !this.body.touching.down)
-    {
-      this.animations.stop();
-      this.frame = 3;
-    }
-    else if (this.body.velocity.x != 0)
-    {
-      this.animations.play('run');
-      if (this.body.velocity.x > 0)
-        this.scale.x = 2;
-      else
-        this.scale.x = -2;
-    }
+  }
+  
+  if (this.body.velocity.y != 0 && !this.body.touching.down)
+  {
+    this.animations.stop();
+    this.frame = 3;
+  }
+  else if (this.body.velocity.x != 0)
+  {
+    this.animations.play('run');
+    if (this.body.velocity.x > 0)
+      this.scale.x = 2;
     else
-    {
-      this.animations.stop();
-      this.frame = 0;
-    }
+      this.scale.x = -2;
+  }
+  else
+  {
+    this.animations.stop();
+    this.frame = 0;
   }
   
   var xBorder = 12;

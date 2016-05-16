@@ -25,9 +25,10 @@ Preload.prototype = {
 
   connect: function() {
     var connectingText = game.add.text(16, 16, 'Connecting...', {fontSize: '24px', fill: '#FFFFFF'});
+    socket = io.connect(process.env.PORT);
     socket.on("connect", function() {
       connectingText.destroy();
       game.state.start('game');
     });
-  }
+  },
 };

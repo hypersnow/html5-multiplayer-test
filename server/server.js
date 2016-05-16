@@ -10,11 +10,7 @@ var broadcastInterval = 60;
 var playerCount = 0;
 var sockets = {};
 
-app.use(express.static(__dirname + '/client'));
-
-app.get('/', function (req, res) {
-  res.render(__dirname + '/client/index.html', {});
-});
+app.use(express.static('../client'));
 
 http.listen(port, function() {
   console.log('listening on ' + port);
@@ -61,6 +57,8 @@ function onPlayerUpdate(msg) {
     sockets[this.id][2] = msg[1];
     sockets[this.id][3] = msg[2];
     sockets[this.id][4] = msg[3];
+    sockets[this.id][7] = msg[4];
+    sockets[this.id][8] = msg[5];
   }
 }
 
@@ -76,7 +74,7 @@ function broadcastLoop() {
     for (var tempSocket in sockets) {
       if (sockets[tempSocket][0])
       {
-        updatedSockets[tempSocket] = [sockets[tempSocket][1], sockets[tempSocket][2], sockets[tempSocket][3], sockets[tempSocket][4]];
+        updatedSockets[tempSocket] = [sockets[tempSocket][1], sockets[tempSocket][2], sockets[tempSocket][3], sockets[tempSocket][4], sockets[tempSocket][7], , sockets[tempSocket][8]];
         sockets[tempSocket][0] = false;
       }
     }
