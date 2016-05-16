@@ -74,29 +74,28 @@ Player.prototype.moveUpdate = function(platforms, cursors) {
     
     if (this.canShoot)
     {
-      this.canShoot = false;
       if (cursors.left.isDown)
       {
         this.body.velocity.x += this.shootPower;
         this.bullets.add(new Bullet(this.x, this.y - 32, 'left'));
       }
-      else if (cursors.right.isDown)
+      if (cursors.right.isDown)
       {
         this.body.velocity.x -= this.shootPower;
         this.bullets.add(new Bullet(this.x, this.y - 32, 'right'));
       }
-      else if (cursors.up.isDown)
+      if (cursors.up.isDown)
       {
         this.body.velocity.y += this.shootPower;
         this.bullets.add(new Bullet(this.x, this.y - 32, 'up'));
       }
-      else if (cursors.down.isDown)
+      if (cursors.down.isDown)
       {
         this.body.velocity.y -= this.shootPower;
         this.bullets.add(new Bullet(this.x, this.y - 32, 'down'));
       }
-      else
-        this.canShoot = true;
+      if (cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown)
+        this.canShoot = false;
     }
   }
   
