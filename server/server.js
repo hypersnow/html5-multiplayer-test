@@ -10,7 +10,11 @@ var broadcastInterval = 60;
 var playerCount = 0;
 var sockets = {};
 
-app.use(express.static('../client'));
+app.use(express.static('/app/client'));
+
+app.get('/', function (req, res) {
+  res.sendFile('/app/client/index.html', {});
+});
 
 http.listen(port, function() {
   console.log('listening on ' + port);
