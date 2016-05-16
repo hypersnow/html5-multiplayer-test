@@ -76,5 +76,5 @@ gulp.task('reload', function () {
 });
 
 gulp.task('watch', function() {
-    gulp.watch(paths.scripts, ['build', 'lint', 'reload']);
+    gulp.watch(paths.scripts, ['build', 'reload']);
 });

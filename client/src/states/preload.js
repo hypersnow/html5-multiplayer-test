@@ -11,8 +11,10 @@ Preload.prototype = {
       game.load.image('sky', '../assets/sky.png');
       game.load.image('ground', '../assets/platform.png');
       game.load.image('star', '../assets/star.png');
+      game.load.image('bullet', '../assets/bullet.png');
       game.load.image('pixel', '../assets/pixel.png');
       game.load.spritesheet('player', '../assets/player.png', 32, 32);
+      game.load.spritesheet('hit', '../assets/hit.png', 32, 32);
       game.load.onLoadComplete.add(function() {
         loaded = true;
         loadingText.destroy();

@@ -33,6 +33,8 @@ Game.prototype = {
     this.addPlatform(400, 400, 200, 2);
     this.addPlatform(0, 250, 1, 1);
     this.addPlatform(600, 300, 1, 1);
+    this.addPlatform(800, 1500, 1, 1);
+    this.addPlatform(1200, 900, 1, 1);
     
     this.stars = game.add.group();
     this.stars.enableBody = true;
@@ -113,8 +115,15 @@ Game.prototype = {
       this.otherPlayers.forEach(function(otherPlayer) {
         if (msg[tempSocket][0] == otherPlayer.name)
         {
-          otherPlayer.x = msg[tempSocket][1];
-          otherPlayer.y = msg[tempSocket][2];
+          var updatedX = msg[tempSocket][1];
+          var updatedY = msg[tempSocket][2];
+          if (game.physics.arcade.distanceToXY(otherPlayer, updatedX, updatedY) > 64)
+          {
+            otherPlayer.x = updatedX;
+            otherPlayer.y = updatedY;
+          }
+          else
+            game.physics.arcade.moveToXY(otherPlayer, updatedX, updatedY, 300, 60);
           otherPlayer.frame = msg[tempSocket][3];
           otherPlayer.body.velocity.x = msg[tempSocket][4];
           otherPlayer.body.velocity.y = msg[tempSocket][5];
@@ -152,7 +161,7 @@ Game.prototype = {
       socket.emit("player init", [true, this.player.name, this.player.x, this.player.y, this.player.frame, this.player.nickname, this.player.tint, this.player.body.velocity.x, this.player.body.velocity.y]);
       this.initSend = false;
     }
-    else if (this.player.body.velocity.x != 0 || this.player.body.velocity.y != 0)
+    else if (this.player.body.velocity.x != 0 || this.player.body.velocity.y != 0 || this.player.moveTimer > 0)
       this.sendPlayerUpdate();
   },
   
