@@ -1,10 +1,13 @@
 var Bullet = require("./bullet");
 
-var Player = function(x, y, control) {
+var Player = function(control, x, y) {
     Phaser.Sprite.call(this, game, x, y, 'player', 0);
     game.physics.arcade.enable(this);
     this.control = control;
-    this.body.gravity.y = 3500;
+    if (control)
+      this.body.gravity.y = 3500;
+    this.updatedX = x;
+    this.updatedY = y;
     this.animations.add('run', [1, 2], 10, true);
     this.anchor.setTo(0.5, 1);
     this.scale.x = 2;
@@ -31,7 +34,7 @@ var Player = function(x, y, control) {
 Player.prototype = Object.create(Phaser.Sprite.prototype);
 Player.prototype.constructor = Player;
 
-Player.prototype.moveUpdate = function(platforms, cursors) {
+Player.prototype.moveUpdate = function(otherPlayers, platforms, cursors) {
   game.physics.arcade.collide(this, platforms);
   if (this.control)
   {
@@ -74,57 +77,56 @@ Player.prototype.moveUpdate = function(platforms, cursors) {
     
     if (this.canShoot)
     {
-      if (cursors.left.isDown)
-      {
-        this.body.velocity.x += this.shootPower;
-        this.bullets.add(new Bullet(this.x, this.y - 32, 'left'));
-      }
-      if (cursors.right.isDown)
-      {
-        this.body.velocity.x -= this.shootPower;
-        this.bullets.add(new Bullet(this.x, this.y - 32, 'right'));
-      }
-      if (cursors.up.isDown)
-      {
-        this.body.velocity.y += this.shootPower;
-        this.bullets.add(new Bullet(this.x, this.y - 32, 'up'));
-      }
-      if (cursors.down.isDown)
-      {
-        this.body.velocity.y -= this.shootPower;
-        this.bullets.add(new Bullet(this.x, this.y - 32, 'down'));
-      }
+      this.addBullet(true, this.x, this.y - 32, cursors.left.isDown, cursors.right.isDown, cursors.up.isDown, cursors.down.isDown, this.shootPower);
       if (cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown)
+      {
+        socket.emit("bullet", [this.x, this.y - 32, cursors.left.isDown, cursors.right.isDown, cursors.up.isDown, cursors.down.isDown]);
         this.canShoot = false;
+      }
     }
+    
+    if (this.body.velocity.y != 0 && !this.body.touching.down)
+    {
+      this.animations.stop();
+      this.frame = 3;
+    }
+    else if (this.body.velocity.x != 0)
+    {
+      this.animations.play('run');
+    }
+    else
+    {
+      this.animations.stop();
+      this.frame = 0;
+    }
+    
+    if (this.body.velocity.x == 0 && this.body.velocity.y == 0)
+    {
+      if (this.moveTimer > 0)
+        this.moveTimer--;
+    }
+    else
+      this.moveTimer = 120;
+      
+    game.physics.arcade.overlap(this, this.bullets, this.hitBullet, null, this);
+  }
+  else
+  {
+    if (game.physics.arcade.distanceToXY(this, this.updatedX, this.updatedY) > 64)
+    {
+      this.x = this.updatedX;
+      this.y = this.updatedY;
+    }
+    game.physics.arcade.moveToXY(this, this.updatedX, this.updatedY, 300, 60);
   }
   
-  if (this.body.velocity.y != 0 && !this.body.touching.down)
+  if (this.body.velocity.x != 0)
   {
-    this.animations.stop();
-    this.frame = 3;
-  }
-  else if (this.body.velocity.x != 0)
-  {
-    this.animations.play('run');
     if (this.body.velocity.x > 0)
       this.scale.x = 2;
     else
       this.scale.x = -2;
   }
-  else
-  {
-    this.animations.stop();
-    this.frame = 0;
-  }
-  
-  if (this.body.velocity.x == 0 && this.body.velocity.y == 0)
-  {
-    if (this.moveTimer > 0)
-      this.moveTimer--;
-  }
-  else
-    this.moveTimer = 120;
   
   var xBorder = 12;
   var yBorder = 64;
@@ -145,7 +147,7 @@ Player.prototype.moveUpdate = function(platforms, cursors) {
   this.nicknameText.y = this.y - 84;
   
   this.bullets.forEach(function(bullet) {
-    if (bullet.moveUpdate(platforms))
+    if (bullet.moveUpdate(otherPlayers, platforms))
       this.bullets.remove(bullet, true);
   }, this);
 };
@@ -157,6 +159,42 @@ Player.prototype.destroy = function() {
 
 Player.prototype.reshoot = function() {
   this.canShoot = true;
+};
+
+Player.prototype.addBullet = function(control, x, y, left, right, up, down, shootPower) {
+  if (left)
+  {
+    if (control)
+      this.body.velocity.x += shootPower;
+    this.bullets.add(new Bullet(x, y, 'left', control));
+  }
+  if (right)
+  {
+    if (control)
+      this.body.velocity.x -= shootPower;
+    this.bullets.add(new Bullet(x, y, 'right', control));
+  }
+  if (up)
+  {
+    if (control)
+      this.body.velocity.y += shootPower;
+    this.bullets.add(new Bullet(x, y, 'up', control));
+  }
+  if (down)
+  {
+    if (control)
+      this.body.velocity.y -= shootPower;
+    this.bullets.add(new Bullet(x, y, 'down', control));
+  }
+};
+
+Player.prototype.hitBullet = function(player, bullet) {
+  if (!bullet.control)
+  {
+    this.body.velocity.x += bullet.body.velocity.x;
+    this.body.velocity.y += bullet.body.velocity.y;
+    bullet.destroy();
+  }
 };
 
 module.exports = Player;

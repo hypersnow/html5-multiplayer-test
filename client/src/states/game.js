@@ -18,7 +18,7 @@ Game.prototype = {
     sky.width = game.world.width;
     sky.height = game.world.height;
     
-    this.player = new Player(30, 30, true);
+    this.player = new Player(true, 30, 30);
     this.player.name = socket.id;
     game.camera.follow(this.player, Phaser.Camera.FOLLOW_PLATFORMER);
     this.initSend = true;
@@ -74,15 +74,16 @@ Game.prototype = {
     socket.on("player disconnect", this.onPlayerDisconnect.bind(this));
     socket.on("players", this.onPlayers.bind(this));
     socket.on("player count", this.onPlayers.bind(this));
+    socket.on("bullet", this.onBullet.bind(this));
   },
 
   update: function() {
-    this.player.moveUpdate(this.platforms, this.cursors);
+    this.player.moveUpdate(this.otherPlayers, this.platforms, this.cursors);
     this.game.physics.arcade.collide(this.stars, this.platforms);
     this.game.physics.arcade.overlap(this.player, this.stars, this.collectStar, null, this);
     
     this.otherPlayers.forEach(function(otherPlayer) {
-      otherPlayer.moveUpdate(this.platforms, this.cursors);
+      otherPlayer.moveUpdate(this.otherPlayers, this.platforms, this.cursors);
     }, this);
   },
 
@@ -115,15 +116,8 @@ Game.prototype = {
       this.otherPlayers.forEach(function(otherPlayer) {
         if (msg[tempSocket][0] == otherPlayer.name)
         {
-          var updatedX = msg[tempSocket][1];
-          var updatedY = msg[tempSocket][2];
-          if (game.physics.arcade.distanceToXY(otherPlayer, updatedX, updatedY) > 64)
-          {
-            otherPlayer.x = updatedX;
-            otherPlayer.y = updatedY;
-          }
-          else
-            game.physics.arcade.moveToXY(otherPlayer, updatedX, updatedY, 300, 60);
+          otherPlayer.updatedX = msg[tempSocket][1];
+          otherPlayer.updatedY = msg[tempSocket][2];
           otherPlayer.frame = msg[tempSocket][3];
           otherPlayer.body.velocity.x = msg[tempSocket][4];
           otherPlayer.body.velocity.y = msg[tempSocket][5];
@@ -150,6 +144,10 @@ Game.prototype = {
     }
   },
   
+  onBullet: function(msg) {
+    this.player.addBullet(false, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], this.player.shootPower);
+  },
+  
   fixedSendLoop: function() {
     this.sendPlayerUpdate();
     socket.emit("player count", this.otherPlayers.length + 1);
@@ -170,7 +168,7 @@ Game.prototype = {
   },
   
   addOtherPlayer: function(msg) {
-    var otherPlayer = this.otherPlayers.add(new Player(msg[2], msg[3], false));
+    var otherPlayer = this.otherPlayers.add(new Player(false, msg[2], msg[3]));
     otherPlayer.name = msg[1];
     otherPlayer.frame = msg[4];
     otherPlayer.nickname = msg[5];

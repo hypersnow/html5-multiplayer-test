@@ -27,6 +27,7 @@ var setEventHandlers = function() {
     client.on("player init", onPlayerInit);
     client.on("player update", onPlayerUpdate);
     client.on("player count", onPlayerCount);
+    client.on("bullet", onBullet);
   });
 };
 
@@ -67,6 +68,10 @@ function onPlayerCount(msg) {
     io.to(this.id).emit("players", sockets);
 }
 
+function onBullet(msg) {
+  this.broadcast.emit("bullet", msg);
+}
+
 function broadcastLoop() {
   if (playerCount > 0)
   {
@@ -74,7 +79,7 @@ function broadcastLoop() {
     for (var tempSocket in sockets) {
       if (sockets[tempSocket][0])
       {
-        updatedSockets[tempSocket] = [sockets[tempSocket][1], sockets[tempSocket][2], sockets[tempSocket][3], sockets[tempSocket][4], sockets[tempSocket][7], , sockets[tempSocket][8]];
+        updatedSockets[tempSocket] = [sockets[tempSocket][1], sockets[tempSocket][2], sockets[tempSocket][3], sockets[tempSocket][4], sockets[tempSocket][7], sockets[tempSocket][8]];
         sockets[tempSocket][0] = false;
       }
     }
