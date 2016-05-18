@@ -164,6 +164,7 @@ Player.prototype.moveUpdate = function(g, otherPlayers, platforms, cursors) {
 
 Player.prototype.destroy = function() {
   this.nicknameText.destroy();
+  this.coinText.destroy();
   Phaser.Sprite.prototype.destroy.call(this);
 };
 
