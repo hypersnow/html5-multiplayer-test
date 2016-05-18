@@ -23,7 +23,8 @@ var Bullet = function(x, y, direction, control) {
         break;
     }
     this.dead = false;
-    setInterval(this.die.bind(this), 300);
+    this.dieInterval = setInterval(this.die.bind(this), 300);
+    this.addHitEffect(this.x, this.y);
     game.add.existing(this);
 };
 
@@ -34,11 +35,15 @@ Bullet.prototype.moveUpdate = function(otherPlayers, platforms) {
   this.bringToTop();
   if (this.control)
     game.physics.arcade.overlap(this, otherPlayers, this.hitOtherPlayer, null, this);
-  return (this.game.physics.arcade.overlap(this, platforms) || this.dead);
+  if (this.game.physics.arcade.overlap(this, platforms))
+    this.die();
+  return this.dead;
 };
 
 Bullet.prototype.die = function() {
   this.dead = true;
+  this.addHitEffect(this.x, this.y);
+  clearInterval(this.dieInterval);
 };
 
 Bullet.prototype.hitOtherPlayer = function(bullet, otherPlayer) {
@@ -46,5 +51,12 @@ Bullet.prototype.hitOtherPlayer = function(bullet, otherPlayer) {
   otherPlayer.body.velocity.y += bullet.body.velocity.y;
   this.dead = true;
 };
+
+Bullet.prototype.addHitEffect = function(x, y) {
+  var hitEffect = game.add.sprite(x, y, 'hit');
+  hitEffect.anchor.setTo(0.5, 0.5);
+  hitEffect.animations.add('anim');
+  hitEffect.play('anim', 60, false, true);
+}
 
 module.exports = Bullet;

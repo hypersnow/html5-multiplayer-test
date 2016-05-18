@@ -36,25 +36,14 @@ Game.prototype = {
     this.addPlatform(800, 1500, 1, 1);
     this.addPlatform(1200, 900, 1, 1);
     
-    this.stars = game.add.group();
-    this.stars.enableBody = true;
-    for (var i = 0; i < 12; i++)
-    {
-      var star = this.stars.create(i * 70, 0, 'star');
-      star.body.gravity.y = 600;
-      star.body.bounce.y = 0.7 + Math.random() * 0.2;
-    }
+    this.coins = game.add.group();
+    this.coins.enableBody = true;
     
     this.cursors = game.input.keyboard.createCursorKeys();
     
-    this.score = 0;
-    this.scoreText = game.add.text(16, 16, 'Coins: 0', { fontSize: '32px', fill: '#000' });
-    this.scoreText.fixedToCamera = true;
-    
-    /*this.overlay = game.add.sprite(0, 0, 'pixel');
-    this.overlay.width = game.world.width;
-    this.overlay.height = game.world.height;
-    this.overlay.alpha = 0.25;*/
+    this.coinCount = 10;
+    this.coinText = game.add.text(16, 16, 'Coins: ' + this.coinCount, { fontSize: '32px', fill: '#000' });
+    this.coinText.fixedToCamera = true;
   },
   
   addPlatform: function(x, y, width, height) {
@@ -75,23 +64,42 @@ Game.prototype = {
     socket.on("players", this.onPlayers.bind(this));
     socket.on("player count", this.onPlayers.bind(this));
     socket.on("bullet", this.onBullet.bind(this));
+    socket.on("coin", this.onCoin.bind(this));
+    socket.on("destroy coin", this.onDestroyCoin.bind(this));
+    socket.on("got coin", this.onGotCoin.bind(this));
   },
 
   update: function() {
-    this.player.moveUpdate(this.otherPlayers, this.platforms, this.cursors);
-    this.game.physics.arcade.collide(this.stars, this.platforms);
-    this.game.physics.arcade.overlap(this.player, this.stars, this.collectStar, null, this);
+    this.player.moveUpdate(this, this.otherPlayers, this.platforms, this.cursors);
+    this.game.physics.arcade.collide(this.coins, this.platforms);
+    this.game.physics.arcade.overlap(this.player, this.coins, this.collectCoin, null, this);
     
     this.otherPlayers.forEach(function(otherPlayer) {
-      otherPlayer.moveUpdate(this.otherPlayers, this.platforms, this.cursors);
+      otherPlayer.moveUpdate(this, this.otherPlayers, this.platforms, this.cursors);
+    }, this);
+    
+    this.coins.forEach(function(coin) {
+      var xBorder = 6;
+      var yBorder = 64;
+      if (coin.x < -xBorder)
+        coin.x = game.world.width + xBorder;
+      else if (coin.x > game.world.width + xBorder)
+        coin.x = -xBorder;
+        
+      if (coin.y < -yBorder)
+        coin.y = game.world.height + yBorder;
+      else if (coin.y > game.world.height + yBorder)
+        coin.y = -yBorder;
+        
+      if (coin.body.velocity.x > 0)
+        coin.body.velocity.x -= 2;
+      else if (coin.body.velocity.x < 0)
+        coin.body.velocity.x += 2;
     }, this);
   },
 
-  collectStar: function(player, star) {
-    star.kill();
-    
-    this.score += 10;
-    this.scoreText.text = 'Coins: ' + this.score;
+  collectCoin: function(player, coin) {
+    socket.emit("got coin", coin.name);
   },
 
   onSocketConnect: function() {
@@ -121,7 +129,10 @@ Game.prototype = {
           otherPlayer.frame = msg[tempSocket][3];
           otherPlayer.body.velocity.x = msg[tempSocket][4];
           otherPlayer.body.velocity.y = msg[tempSocket][5];
+          otherPlayer.coinCount = msg[tempSocket][6];
         }
+        else if (msg[tempSocket][0] == this.player.name)
+          this.player.coinCount = msg[tempSocket][6];
       }, this);
     }
   },
@@ -130,6 +141,7 @@ Game.prototype = {
     this.otherPlayers.forEach(function(otherPlayer) {
       if (msg == "/#" + otherPlayer.name)
       {
+        this.otherPlayers.remove(otherPlayer);
         otherPlayer.destroy();
         console.log("player dced");
       }
@@ -148,6 +160,27 @@ Game.prototype = {
     this.player.addBullet(false, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], this.player.shootPower);
   },
   
+  onCoin: function(msg) {
+    this.addCoin(msg[0], msg[1], msg[2], msg[3], msg[4]);
+  },
+  
+  onDestroyCoin: function(msg) {
+    this.coins.forEach(function(coin) {
+      if (coin.name == msg)
+      {
+        this.coins.remove(coin);
+        coin.destroy();
+        this.addHitEffect(coin.x, coin.y);
+      }
+    }, this);
+  },
+  
+  onGotCoin: function(msg) {
+    this.coinCount++;
+    this.coinText.text = 'Coins: ' + this.coinCount;
+    this.sendPlayerUpdate();
+  },
+  
   fixedSendLoop: function() {
     this.sendPlayerUpdate();
     socket.emit("player count", this.otherPlayers.length + 1);
@@ -156,7 +189,7 @@ Game.prototype = {
   sendLoop: function() {
     if (this.initSend)
     {
-      socket.emit("player init", [true, this.player.name, this.player.x, this.player.y, this.player.frame, this.player.nickname, this.player.tint, this.player.body.velocity.x, this.player.body.velocity.y]);
+      socket.emit("player init", [true, this.player.name, this.player.x, this.player.y, this.player.frame, this.player.nickname, this.player.tint, this.player.body.velocity.x, this.player.body.velocity.y, this.coinCount]);
       this.initSend = false;
     }
     else if (this.player.body.velocity.x != 0 || this.player.body.velocity.y != 0 || this.player.moveTimer > 0)
@@ -164,7 +197,7 @@ Game.prototype = {
   },
   
   sendPlayerUpdate: function() {
-    socket.emit("player update", [true, this.player.x, this.player.y, this.player.frame, this.player.body.velocity.x, this.player.body.velocity.y]);
+    socket.emit("player update", [true, this.player.x, this.player.y, this.player.frame, this.player.body.velocity.x, this.player.body.velocity.y, this.coinCount]);
   },
   
   addOtherPlayer: function(msg) {
@@ -175,5 +208,24 @@ Game.prototype = {
     otherPlayer.tint = msg[6];
     otherPlayer.body.velocity.x = msg[7];
     otherPlayer.body.velocity.y = msg[8];
+  },
+  
+  addHitEffect: function(x, y) {
+    var hitEffect = game.add.sprite(x, y, 'hit');
+    hitEffect.anchor.setTo(0.5, 0.5);
+    hitEffect.animations.add('anim');
+    hitEffect.play('anim', 60, false, true);
+  },
+  
+  addCoin: function(x, y, dx, dy, id) {
+    var coin = this.coins.create(x, y, 'coin');
+    coin.name = id;
+    coin.anchor.setTo(0.5, 0.5);
+    coin.animations.add('spin');
+    coin.animations.play('spin', 40, true);
+    coin.body.gravity.y = 1000;
+    coin.body.bounce.y = 0.7;
+    coin.body.velocity.x = dx;
+    coin.body.velocity.y = dy;
   }
 };

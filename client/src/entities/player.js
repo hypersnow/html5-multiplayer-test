@@ -15,7 +15,9 @@ var Player = function(control, x, y) {
     this.body.setSize(10, 30, 0, 0);
     this.tint = '0x' + (Math.round(Math.random()*Math.pow(2, 24))).toString(16);
     this.nickname = "Player " + String(game.rnd.integerInRange(1000, 9999));
-    this.nicknameText = game.add.text(x + 32, y - 16, this.nickname, { fontSize: '16px', fill: '#000' })
+    this.nicknameText = game.add.text(x + 32, y - 16, this.nickname, { fontSize: '16px', fill: '#000' });
+    this.coinCount = 10;
+    this.coinText = game.add.text(x + 32, y - 32, this.coinCount + "c", { fontSize: '16px', fill: '#000' });
     this.jumping = false;
     this.jump = 600;
     this.jumpPrevious = 0;
@@ -28,13 +30,15 @@ var Player = function(control, x, y) {
     this.bullets = game.add.group();
     this.bullets.classType = Bullet;
     this.bullets.enableBody = true;
+    this.g = null;
     game.add.existing(this);
 };
 
 Player.prototype = Object.create(Phaser.Sprite.prototype);
 Player.prototype.constructor = Player;
 
-Player.prototype.moveUpdate = function(otherPlayers, platforms, cursors) {
+Player.prototype.moveUpdate = function(g, otherPlayers, platforms, cursors) {
+  this.g = g;
   game.physics.arcade.collide(this, platforms);
   if (this.control)
   {
@@ -108,6 +112,8 @@ Player.prototype.moveUpdate = function(otherPlayers, platforms, cursors) {
     else
       this.moveTimer = 120;
       
+    this.coinCount = g.coinCount;
+      
     game.physics.arcade.overlap(this, this.bullets, this.hitBullet, null, this);
   }
   else
@@ -128,7 +134,7 @@ Player.prototype.moveUpdate = function(otherPlayers, platforms, cursors) {
       this.scale.x = -2;
   }
   
-  var xBorder = 12;
+  var xBorder = 6;
   var yBorder = 64;
   if (this.x < -xBorder)
     this.x = game.world.width + xBorder;
@@ -145,6 +151,10 @@ Player.prototype.moveUpdate = function(otherPlayers, platforms, cursors) {
   this.nicknameText.text = this.nickname;
   this.nicknameText.x = this.x - 46;
   this.nicknameText.y = this.y - 84;
+  this.coinText.bringToTop();
+  this.coinText.text = this.coinCount + "c";
+  this.coinText.x = this.x - 46;
+  this.coinText.y = this.y - 100;
   
   this.bullets.forEach(function(bullet) {
     if (bullet.moveUpdate(otherPlayers, platforms))
@@ -194,6 +204,12 @@ Player.prototype.hitBullet = function(player, bullet) {
     this.body.velocity.x += bullet.body.velocity.x;
     this.body.velocity.y += bullet.body.velocity.y;
     bullet.destroy();
+    if (this.g.coinCount > 0)
+    {
+      socket.emit("player hit", [this.x, this.y - 16]);
+      this.g.coinCount--;
+      this.g.coinText.text = 'Coins: ' + this.g.coinCount;
+    }
   }
 };
 
