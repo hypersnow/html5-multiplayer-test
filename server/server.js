@@ -13,7 +13,11 @@ var sockets = {};
 var coins = {};
 var coinCount = 0;
 
-app.use(express.static('../client'));
+app.use(express.static('/app/client'));
+
+app.get('/', function (req, res) {
+  res.sendFile('/app/client/index.html', {});
+});
 
 http.listen(port, function() {
   console.log('listening on ' + port);
